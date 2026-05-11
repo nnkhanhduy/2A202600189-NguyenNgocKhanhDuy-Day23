@@ -3,7 +3,7 @@
 ## 1. Team / student
 
 - Name: nnkhanhduy
-- Repo/commit: phase2-track3-day8-langgraph-agent
+- Repo/commit: https://github.com/nnkhanhduy/2A202600189-NguyenNgocKhanhDuy-Day23
 - Date: 2026-05-11
 
 ## 2. Architecture
