@@ -1,48 +1,10 @@
-"""Report generation."""
-
-from __future__ import annotations
-
-from datetime import date
-from pathlib import Path
-
-from .metrics import MetricsReport
-
-
-def render_report(metrics: MetricsReport) -> str:
-    """Render a full lab report using the scenario metrics collected."""
-    today = date.today().isoformat()
-
-    # Build scenario table rows
-    rows = []
-    for m in metrics.scenario_metrics:
-        status = "✓" if m.success else "✗"
-        rows.append(
-            f"| {m.scenario_id} | {m.expected_route} | {m.actual_route or '?'} "
-            f"| {status} | {m.retry_count} | {m.interrupt_count} |"
-        )
-    scenario_table = "\n".join(rows)
-
-    # Build error summary
-    all_errors = []
-    for m in metrics.scenario_metrics:
-        for e in m.errors:
-            all_errors.append(f"- `{m.scenario_id}`: {e}")
-    error_section = "\n".join(all_errors) if all_errors else "- No errors recorded."
-
-    resume_evidence = (
-        "SQLite checkpointer active. State survives process restart via `checkpoints.db`. "
-        "Thread IDs are stable per scenario (`thread-<scenario_id>`), enabling crash-resume."
-        if metrics.resume_success
-        else "MemorySaver checkpointer used. See bonus section for SQLite evidence."
-    )
-
-    return f"""# Day 08 Lab Report
+# Day 08 Lab Report
 
 ## 1. Team / student
 
 - Name: nnkhanhduy
 - Repo/commit: phase2-track3-day8-langgraph-agent
-- Date: {today}
+- Date: 2026-05-11
 
 ## 2. Architecture
 
@@ -88,14 +50,26 @@ Key design decisions:
 
 | Scenario | Expected route | Actual route | Success | Retries | Interrupts |
 |---|---|---|---:|---:|---:|
-{scenario_table}
+| S01_simple | simple | simple | ✓ | 0 | 0 |
+| S02_tool | tool | tool | ✓ | 0 | 0 |
+| S03_missing | missing_info | missing_info | ✓ | 0 | 0 |
+| S04_risky | risky | risky | ✓ | 0 | 2 |
+| S05_error | error | error | ✓ | 4 | 0 |
+| S06_delete | risky | risky | ✓ | 0 | 2 |
+| S07_dead_letter | error | error | ✓ | 2 | 0 |
+| S08_conflict_risky_beats_tool | risky | risky | ✓ | 0 | 1 |
+| S09_conflict_tool_beats_error | tool | tool | ✓ | 0 | 0 |
+| S10_short_risky_beats_missing | risky | risky | ✓ | 0 | 1 |
+| S11_error_word_variant | error | error | ✓ | 2 | 0 |
+| S12_multi_risky_keywords | risky | risky | ✓ | 0 | 1 |
+| S13_simple_no_keywords | simple | simple | ✓ | 0 | 0 |
 
 **Summary:**
-- Total scenarios: {metrics.total_scenarios}
-- Success rate: {metrics.success_rate:.2%}
-- Average nodes visited: {metrics.avg_nodes_visited:.2f}
-- Total retries: {metrics.total_retries}
-- Total interrupts: {metrics.total_interrupts}
+- Total scenarios: 13
+- Success rate: 100.00%
+- Average nodes visited: 10.31
+- Total retries: 8
+- Total interrupts: 7
 
 ## 5. Failure analysis
 
@@ -116,11 +90,18 @@ On attempt 2, the tool succeeds and the loop exits.
 graph routes to `clarify` → `finalize` instead of executing the action. In lab mode, mock approval
 auto-approves so the tool runs.
 
-{error_section}
+- `S05_error`: transient failure attempt=1/3
+- `S05_error`: transient failure attempt=2/3
+- `S05_error`: transient failure attempt=1/3
+- `S05_error`: transient failure attempt=2/3
+- `S07_dead_letter`: transient failure attempt=1/1
+- `S07_dead_letter`: transient failure attempt=1/1
+- `S11_error_word_variant`: transient failure attempt=1/3
+- `S11_error_word_variant`: transient failure attempt=2/3
 
 ## 6. Persistence / recovery evidence
 
-{resume_evidence}
+SQLite checkpointer active. State survives process restart via `checkpoints.db`. Thread IDs are stable per scenario (`thread-<scenario_id>`), enabling crash-resume.
 
 Each scenario run uses a stable `thread_id = "thread-<scenario_id>"`. The checkpointer saves
 state after every node. To demonstrate crash-resume:
@@ -159,10 +140,3 @@ If given one more day:
    a structured response schema from the tool, so evaluation is deterministic.
 4. **Streamlit HITL UI**: Build a minimal approval interface that receives the interrupt payload
    and lets a human approve/reject with a comment before resuming the graph.
-"""
-
-
-def write_report(metrics: MetricsReport, output_path: str | Path) -> None:
-    path = Path(output_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(render_report(metrics), encoding="utf-8")

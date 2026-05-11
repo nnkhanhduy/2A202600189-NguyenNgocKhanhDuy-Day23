@@ -5,3 +5,9 @@
 {"id":"S05_error","query":"Timeout failure while processing request","expected_route":"error","requires_approval":false,"should_retry":true,"tags":["retry"]}
 {"id":"S06_delete","query":"Delete customer account after support verification","expected_route":"risky","requires_approval":true,"should_retry":false,"tags":["hitl","destructive"]}
 {"id":"S07_dead_letter","query":"System failure cannot recover after multiple attempts","expected_route":"error","requires_approval":false,"should_retry":true,"max_attempts":1,"tags":["dead_letter","retry"]}
+{"id":"S08_conflict_risky_beats_tool","query":"Check if the refund was processed for order 99999","expected_route":"risky","requires_approval":true,"should_retry":false,"tags":["conflict","priority","risky"]}
+{"id":"S09_conflict_tool_beats_error","query":"Find the error logs for order 5678","expected_route":"tool","requires_approval":false,"should_retry":false,"tags":["conflict","priority","tool"]}
+{"id":"S10_short_risky_beats_missing","query":"Delete it all","expected_route":"risky","requires_approval":true,"should_retry":false,"tags":["conflict","priority","risky","short"]}
+{"id":"S11_error_word_variant","query":"The server keeps crashing and requests are failing","expected_route":"error","requires_approval":false,"should_retry":true,"tags":["error","word-variant","retry"]}
+{"id":"S12_multi_risky_keywords","query":"Cancel my subscription immediately and remove all my data","expected_route":"risky","requires_approval":true,"should_retry":false,"tags":["hitl","risky","destructive"]}
+{"id":"S13_simple_no_keywords","query":"How long does standard shipping take?","expected_route":"simple","requires_approval":false,"should_retry":false,"tags":["simple"]}
