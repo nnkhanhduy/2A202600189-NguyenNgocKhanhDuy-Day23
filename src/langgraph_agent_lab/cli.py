@@ -35,7 +35,9 @@ def run_scenarios(
         state = initial_state(scenario)
         run_config = {"configurable": {"thread_id": state["thread_id"]}}
         final_state = graph.invoke(state, config=run_config)
-        metrics.append(metric_from_state(final_state, scenario.expected_route.value, scenario.requires_approval))
+        metrics.append(metric_from_state(
+            final_state, scenario.expected_route.value, scenario.requires_approval,
+        ))
 
     # resume_success=True when using a durable checkpointer (sqlite/postgres)
     resume_success = checkpointer_kind in ("sqlite", "postgres")
@@ -44,7 +46,8 @@ def run_scenarios(
     if cfg.get("report_path"):
         write_report(report, cfg["report_path"])
     typer.echo(f"Wrote metrics to {output}")
-    typer.echo(f"Success rate: {report.success_rate:.2%} ({sum(1 for m in metrics if m.success)}/{len(metrics)})")
+    passed = sum(1 for m in metrics if m.success)
+    typer.echo(f"Success rate: {report.success_rate:.2%} ({passed}/{len(metrics)})")
 
 
 @app.command("validate-metrics")
@@ -79,7 +82,8 @@ def time_travel(
     cfg = yaml.safe_load(config.read_text(encoding="utf-8"))
     checkpointer_kind = cfg.get("checkpointer", "memory")
     if checkpointer_kind == "memory":
-        typer.echo("Time travel requires a durable checkpointer. Set checkpointer: sqlite in lab.yaml", err=True)
+        msg = "Time travel requires a durable checkpointer. Set checkpointer: sqlite in lab.yaml"
+        typer.echo(msg, err=True)
         raise typer.Exit(1)
 
     checkpointer = build_checkpointer(checkpointer_kind, cfg.get("database_url"))

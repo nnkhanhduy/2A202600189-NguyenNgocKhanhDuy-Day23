@@ -3,7 +3,7 @@
 ## 1. Team / student
 
 - Name: nnkhanhduy
-- Repo/commit: https://github.com/nnkhanhduy/2A202600189-NguyenNgocKhanhDuy-Day23
+- Repo/commit: phase2-track3-day8-langgraph-agent
 - Date: 2026-05-11
 
 ## 2. Architecture
@@ -53,23 +53,23 @@ Key design decisions:
 | S01_simple | simple | simple | ✓ | 0 | 0 |
 | S02_tool | tool | tool | ✓ | 0 | 0 |
 | S03_missing | missing_info | missing_info | ✓ | 0 | 0 |
-| S04_risky | risky | risky | ✓ | 0 | 2 |
-| S05_error | error | error | ✓ | 4 | 0 |
-| S06_delete | risky | risky | ✓ | 0 | 2 |
-| S07_dead_letter | error | error | ✓ | 2 | 0 |
-| S08_conflict_risky_beats_tool | risky | risky | ✓ | 0 | 1 |
+| S04_risky | risky | risky | ✓ | 0 | 4 |
+| S05_error | error | error | ✓ | 8 | 0 |
+| S06_delete | risky | risky | ✓ | 0 | 4 |
+| S07_dead_letter | error | error | ✓ | 4 | 0 |
+| S08_conflict_risky_beats_tool | risky | risky | ✓ | 0 | 3 |
 | S09_conflict_tool_beats_error | tool | tool | ✓ | 0 | 0 |
-| S10_short_risky_beats_missing | risky | risky | ✓ | 0 | 1 |
-| S11_error_word_variant | error | error | ✓ | 2 | 0 |
-| S12_multi_risky_keywords | risky | risky | ✓ | 0 | 1 |
+| S10_short_risky_beats_missing | risky | risky | ✓ | 0 | 3 |
+| S11_error_word_variant | error | error | ✓ | 6 | 0 |
+| S12_multi_risky_keywords | risky | risky | ✓ | 0 | 3 |
 | S13_simple_no_keywords | simple | simple | ✓ | 0 | 0 |
 
 **Summary:**
 - Total scenarios: 13
 - Success rate: 100.00%
-- Average nodes visited: 10.31
-- Total retries: 8
-- Total interrupts: 7
+- Average nodes visited: 24.00
+- Total retries: 18
+- Total interrupts: 17
 
 ## 5. Failure analysis
 
@@ -94,8 +94,18 @@ auto-approves so the tool runs.
 - `S05_error`: transient failure attempt=2/3
 - `S05_error`: transient failure attempt=1/3
 - `S05_error`: transient failure attempt=2/3
+- `S05_error`: transient failure attempt=1/3
+- `S05_error`: transient failure attempt=2/3
+- `S05_error`: transient failure attempt=1/3
+- `S05_error`: transient failure attempt=2/3
 - `S07_dead_letter`: transient failure attempt=1/1
 - `S07_dead_letter`: transient failure attempt=1/1
+- `S07_dead_letter`: transient failure attempt=1/1
+- `S07_dead_letter`: transient failure attempt=1/1
+- `S11_error_word_variant`: transient failure attempt=1/3
+- `S11_error_word_variant`: transient failure attempt=2/3
+- `S11_error_word_variant`: transient failure attempt=1/3
+- `S11_error_word_variant`: transient failure attempt=2/3
 - `S11_error_word_variant`: transient failure attempt=1/3
 - `S11_error_word_variant`: transient failure attempt=2/3
 
@@ -152,8 +162,10 @@ Run `python -m langgraph_agent_lab.cli time-travel --thread-id <thread_id>` to r
 state history checkpoints for any completed scenario run.
 
 ### Extended test coverage (84 tests)
-Added `tests/test_classify.py` (27 tests) covering all 5 routes, priority conflicts (risky > tool > missing_info > error), word variant matching (crashing/failing/cancelled), and edge cases.
-Added `tests/test_graph_full.py` (12 tests) covering all routes end-to-end, retry loop bounding, dead-letter escalation, and audit trail completeness.
+Added `tests/test_classify.py` (27 tests) covering all 5 routes, priority conflicts
+(risky > tool > missing_info > error), word variant matching, and edge cases.
+Added `tests/test_graph_full.py` (12 tests) covering all routes end-to-end, retry loop bounding,
+dead-letter escalation, and audit trail completeness.
 Added `tests/test_nodes.py` (34 tests) covering all node functions in isolation.
 
 ## 8. Improvement plan

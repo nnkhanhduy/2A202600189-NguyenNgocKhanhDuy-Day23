@@ -41,9 +41,16 @@ def classify_node(state: AgentState) -> dict:
     route = Route.SIMPLE
     risk_level = "low"
 
-    risky_keywords = {"refund", "delete", "send", "cancel", "remove", "revoke", "wipe", "purge", "terminate"}
-    tool_keywords = {"status", "order", "lookup", "check", "track", "find", "search", "query", "get", "fetch", "retrieve"}
-    error_keywords = {"timeout", "fail", "failure", "error", "crash", "unavailable", "exception", "broken"}
+    risky_keywords = {
+        "refund", "delete", "send", "cancel", "remove", "revoke", "wipe", "purge", "terminate",
+    }
+    tool_keywords = {
+        "status", "order", "lookup", "check", "track", "find", "search", "query",
+        "get", "fetch", "retrieve",
+    }
+    error_keywords = {
+        "timeout", "fail", "failure", "error", "crash", "unavailable", "exception", "broken",
+    }
 
     if _matches(clean_words, risky_keywords):
         route = Route.RISKY
@@ -58,7 +65,9 @@ def classify_node(state: AgentState) -> dict:
     return {
         "route": route.value,
         "risk_level": risk_level,
-        "events": [make_event("classify", "completed", f"route={route.value}", risk_level=risk_level)],
+        "events": [
+            make_event("classify", "completed", f"route={route.value}", risk_level=risk_level)
+        ],
     }
 
 
@@ -68,11 +77,20 @@ def ask_clarification_node(state: AgentState) -> dict:
     clean = query.lower().strip("?!.,; ")
 
     if len(clean.split()) < 3:
-        question = "Could you describe your issue in more detail? For example, what product or account is affected?"
+        question = (
+            "Could you describe your issue in more detail? "
+            "For example, what product or account is affected?"
+        )
     elif "it" in clean.split() or "this" in clean.split():
-        question = f"You mentioned '{clean}' — could you clarify what 'it' refers to? Please include an order ID or account detail."
+        question = (
+            f"You mentioned '{clean}' — could you clarify what 'it' refers to? "
+            "Please include an order ID or account detail."
+        )
     else:
-        question = f"I need more context to help you with: '{query}'. Could you provide an order number, account ID, or additional details?"
+        question = (
+            f"I need more context to help you with: '{query}'. "
+            "Could you provide an order number, account ID, or additional details?"
+        )
 
     return {
         "pending_question": question,
@@ -93,14 +111,17 @@ def tool_node(state: AgentState) -> dict:
         result = f"ERROR: transient failure attempt={attempt} scenario={scenario_id}"
         return {
             "tool_results": [result],
-            "events": [make_event("tool", "error", f"tool failed attempt={attempt}", scenario=scenario_id)],
+            "events": [
+                make_event("tool", "error", f"tool failed attempt={attempt}", scenario=scenario_id)
+            ],
         }
 
     # Mock structured tool result based on query content
+    trk = scenario_id[-3:] if len(scenario_id) >= 3 else "000"
     if "order" in query.lower() or "status" in query.lower():
-        result = f"Order status: SHIPPED — tracking #TRK{scenario_id[-3:] if len(scenario_id) >= 3 else '000'}. Expected delivery: 2 business days."
+        result = f"Order status: SHIPPED — tracking #TRK{trk}. Expected delivery: 2 business days."
     elif "refund" in query.lower():
-        result = f"Refund processed for scenario={scenario_id}. Amount: $49.99. Confirmation: REF-{scenario_id}."
+        result = f"Refund of $49.99 processed. Confirmation: REF-{scenario_id}."
     elif "delete" in query.lower() or "account" in query.lower():
         result = f"Account deletion scheduled for scenario={scenario_id}. Grace period: 30 days."
     else:
@@ -108,7 +129,9 @@ def tool_node(state: AgentState) -> dict:
 
     return {
         "tool_results": [result],
-        "events": [make_event("tool", "completed", f"tool executed attempt={attempt}", scenario=scenario_id)],
+        "events": [
+            make_event("tool", "completed", f"tool done attempt={attempt}", scenario=scenario_id)
+        ],
     }
 
 
@@ -136,7 +159,11 @@ def risky_action_node(state: AgentState) -> dict:
     )
     return {
         "proposed_action": proposed,
-        "events": [make_event("risky_action", "pending_approval", "approval required", action_type=action_type)],
+        "events": [
+            make_event(
+                "risky_action", "pending_approval", "approval required", action_type=action_type
+            )
+        ],
     }
 
 
@@ -159,11 +186,18 @@ def approval_node(state: AgentState) -> dict:
         else:
             decision = ApprovalDecision(approved=bool(value))
     else:
-        decision = ApprovalDecision(approved=True, reviewer="mock-reviewer", comment="auto-approved for lab")
+        decision = ApprovalDecision(
+            approved=True, reviewer="mock-reviewer", comment="auto-approved for lab"
+        )
 
     return {
         "approval": decision.model_dump(),
-        "events": [make_event("approval", "completed", f"approved={decision.approved}", reviewer=decision.reviewer)],
+        "events": [
+            make_event(
+                "approval", "completed",
+                f"approved={decision.approved}", reviewer=decision.reviewer,
+            )
+        ],
     }
 
 
@@ -198,15 +232,23 @@ def answer_node(state: AgentState) -> dict:
     elif route == Route.SIMPLE.value:
         query = state.get("query", "").lower()
         if "password" in query:
-            answer = "To reset your password: go to the login page and click 'Forgot Password'. You'll receive a reset link by email within 5 minutes."
+            answer = (
+                "To reset your password: go to the login page and click 'Forgot Password'. "
+                "You'll receive a reset link by email within 5 minutes."
+            )
         else:
-            answer = "Thank you for your inquiry. Our support team has reviewed your request and it has been resolved."
+            answer = (
+                "Thank you for your inquiry. Our support team has reviewed your request "
+                "and it has been resolved."
+            )
     else:
         answer = "Your request has been processed successfully."
 
     return {
         "final_answer": answer,
-        "events": [make_event("answer", "completed", "answer generated", grounded=bool(tool_results))],
+        "events": [
+            make_event("answer", "completed", "answer generated", grounded=bool(tool_results))
+        ],
     }
 
 
@@ -218,7 +260,9 @@ def evaluate_node(state: AgentState) -> dict:
     if latest.startswith("ERROR:") or "transient failure" in latest:
         return {
             "evaluation_result": "needs_retry",
-            "events": [make_event("evaluate", "needs_retry", "tool result indicates failure, retry needed")],
+            "events": [
+                make_event("evaluate", "needs_retry", "tool result indicates failure, retry needed")
+            ],
         }
     return {
         "evaluation_result": "success",
@@ -250,5 +294,9 @@ def finalize_node(state: AgentState) -> dict:
     route = state.get("route", "unknown")
     has_answer = bool(state.get("final_answer") or state.get("pending_question"))
     return {
-        "events": [make_event("finalize", "completed", "workflow finished", route=route, has_answer=has_answer)],
+        "events": [
+            make_event(
+                "finalize", "completed", "workflow finished", route=route, has_answer=has_answer
+            )
+        ],
     }

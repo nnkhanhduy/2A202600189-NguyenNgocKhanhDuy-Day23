@@ -140,6 +140,28 @@ Switched checkpointer from `MemorySaver` to `SqliteSaver` in `configs/lab.yaml`.
 Fixed the API bug: original skeleton used `SqliteSaver.from_conn_string()` (returns a context manager),
 replaced with `SqliteSaver(conn=sqlite3.connect(..., check_same_thread=False))` with WAL mode enabled.
 
+### Real HITL with interrupt/resume
+`approval_node` uses `langgraph.types.interrupt()` when `LANGGRAPH_INTERRUPT=true`. The graph pauses
+mid-execution, saves state to SQLite, and waits for a human decision. Resumed via `Command(resume=decision)`.
+
+### Streamlit HITL UI (`streamlit_app.py`)
+Two-tab Streamlit app:
+- **Tab 1 (Agent HITL)**: Load any scenario, run the graph, and — for risky routes — the UI pauses
+  and presents an approval/reject interface. After decision, the graph resumes from the saved checkpoint.
+  Displays route match metrics and full execution log.
+- **Tab 2 (Crash Resume Demo)**: Simulates a process crash mid-execution (configurable crash point),
+  shows the SQLite checkpoint state, then resumes the graph in a fresh process from the last checkpoint.
+
+Run with: `streamlit run streamlit_app.py`
+
+### Crash-resume demo (`crash_resume_demo.py`)
+Standalone script that demonstrates three phases:
+1. Run the error-route graph, raise `KeyboardInterrupt` after N nodes (simulated crash).
+2. Rebuild graph from scratch with same SQLite DB and same `thread_id` — resumes without re-running completed nodes.
+3. Print full `get_state_history()` output (time travel) showing all checkpoint snapshots.
+
+Run with: `python crash_resume_demo.py`
+
 ### Graph diagram (Mermaid)
 Run `python -m langgraph_agent_lab.cli make-diagram` to export the graph as a Mermaid diagram
 to `outputs/graph.md`.
@@ -147,6 +169,13 @@ to `outputs/graph.md`.
 ### Time travel
 Run `python -m langgraph_agent_lab.cli time-travel --thread-id <thread_id>` to replay
 state history checkpoints for any completed scenario run.
+
+### Extended test coverage (84 tests)
+Added `tests/test_classify.py` (27 tests) covering all 5 routes, priority conflicts
+(risky > tool > missing_info > error), word variant matching, and edge cases.
+Added `tests/test_graph_full.py` (12 tests) covering all routes end-to-end, retry loop bounding,
+dead-letter escalation, and audit trail completeness.
+Added `tests/test_nodes.py` (34 tests) covering all node functions in isolation.
 
 ## 8. Improvement plan
 
@@ -157,8 +186,8 @@ If given one more day:
    CRM) with proper error handling and idempotency keys.
 3. **Structured evaluation**: Replace `"ERROR:" in result` heuristic in `evaluate_node` with
    a structured response schema from the tool, so evaluation is deterministic.
-4. **Streamlit HITL UI**: Build a minimal approval interface that receives the interrupt payload
-   and lets a human approve/reject with a comment before resuming the graph.
+4. **Reject/edit outcomes in approval**: Currently rejected actions route to `clarify`. A richer
+   flow would let the human edit the proposed action before re-approving.
 """
 
 

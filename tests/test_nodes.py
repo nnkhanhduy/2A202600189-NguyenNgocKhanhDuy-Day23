@@ -1,6 +1,5 @@
 """Unit tests for individual node functions in nodes.py."""
 
-import pytest
 from langgraph_agent_lab.nodes import (
     answer_node,
     ask_clarification_node,
